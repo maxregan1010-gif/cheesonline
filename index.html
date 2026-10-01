@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>حسین شطرنج آنلاین</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#26364a,#0d1117 62%);color:#fff;font-family:tahoma,Arial;min-height:100vh}
+button,input{font:inherit}.screen{display:none;min-height:100vh;padding:18px}.screen.active{display:flex;align-items:center;justify-content:center}
+.card{width:min(720px,96vw);background:#141c26ee;border:1px solid #526274;border-radius:24px;padding:26px;box-shadow:0 20px 70px #0009;backdrop-filter:blur(14px)}
+h1,h2{margin-top:0}.sub{color:#aebdcb}.btn{border:0;border-radius:13px;padding:13px 18px;margin:5px;cursor:pointer;background:linear-gradient(135deg,#2e9cff,#6c63ff);color:#fff;font-weight:bold}.btn.secondary{background:#293544}.btn.danger{background:#9d3142}.btn.green{background:#167c5b}
+input{width:100%;padding:13px;border-radius:12px;border:1px solid #536476;background:#101720;color:#fff;outline:none;margin:9px 0}.code{font-size:32px;letter-spacing:7px;font-weight:bold;color:#70d8ff;background:#101923;padding:15px;border-radius:15px;text-align:center}
+.players{display:grid;gap:9px;margin:17px 0}.player{padding:12px;border-radius:12px;background:#18212c;display:flex;justify-content:space-between}.tag{color:#6ee7b7}
+#gameScreen{align-items:flex-start}.gameWrap{width:min(1120px,100%);margin:auto}.topbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}.clock{font-size:24px;font-weight:bold;padding:9px 16px;border-radius:12px;background:#17212c}.clock.active{outline:2px solid #59d5ff}.status{padding:9px 13px;background:#17212c;border-radius:12px;margin-top:5px}
+.board{width:min(82vw,620px);aspect-ratio:1;margin:13px auto;display:grid;grid-template-columns:repeat(8,1fr);border:5px solid #526272;border-radius:7px;overflow:hidden;box-shadow:0 20px 60px #0009}.cell{display:flex;align-items:center;justify-content:center;font-size:clamp(27px,7vw,60px);cursor:pointer;user-select:none;position:relative}.light{background:#f0d9b5}.dark{background:#b58863}.cell.sel{outline:4px solid #23ee83;outline-offset:-4px}.cell.move{box-shadow:inset 0 0 0 5px #12aef5}.cell.capture{box-shadow:inset 0 0 0 6px #e85b5b}.cell.check{background:#e35d5d!important}.coord{position:absolute;font-size:10px;color:#0008;bottom:2px;left:3px}
+.info{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}.pill{padding:8px 13px;border-radius:11px;background:#18212c}.hidden{display:none!important}
+.actions{text-align:center;margin-top:8px}.modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;z-index:5}.modal.show{display:flex}.modal .card{width:min(420px,92vw)}
+.promo{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.promo button{font-size:36px;padding:10px}
+@media(max-width:600px){.screen{padding:10px}.card{padding:19px}.board{border-width:3px}.btn{width:100%;margin:4px 0}}
+</style>
+</head>
+<body>
+<section id="menuScreen" class="screen active"><div class="card">
+<h1>♟ حسین شطرنج آنلاین</h1><p class="sub">اینجا جریان سیاه🤍 و سفیده🖤</p><label>نامت</label><input id="playerName" maxlength="20" placeholder="مثلاً بکیر ابن اعین"><p id="nameHint" class="sub">نامی وارد کن تا بازیکنان همدیگر را بشناسند و گه گیجه نگیرند</p>
+<button class="btn" id="createBtn">ساخت اتاق</button><button class="btn secondary" id="joinBtn">ورود به اتاق دیگران</button>
+</div></section>
+
+<section id="roomScreen" class="screen"><div class="card">
+<h2>اتاق بازی</h2><p>کد اتاق را برای بازیکن دوم بفرست:</p><div class="code" id="roomCode">------</div>
+<div class="players" id="players"></div><div id="roomHint" class="sub">منتظر بازیکن دوم...</div>
+<button class="btn" id="startBtn">شروع بازی</button><button class="btn danger" id="leaveBtn">خروج از اتاق</button>
+</div></section>
+
+<section id="joinScreen" class="screen"><div class="card">
+<h2>ورود به اتاق</h2><input id="joinCode" maxlength="6" placeholder="کد ۶ رقمی اتاق">
+<button class="btn" id="joinConfirm">ورود</button><button class="btn secondary" id="joinBack">بازگشت</button><div id="joinError"></div>
+</div></section>
+
+<section id="gameScreen" class="screen"><div class="gameWrap">
+<div class="topbar"><div><b id="gameRoom"></b><div id="gameStatus" class="status">در حال اتصال...</div></div>
+<div class="info"><div class="clock" id="whiteClock">05:00</div><div class="clock" id="blackClock">05:00</div></div></div>
+<div id="board" class="board"></div><div class="info"><div class="pill" id="myColor"></div><div class="pill" id="turnText"></div><div class="pill" id="ruleText"></div></div>
+<div class="actions"><button class="btn secondary" id="drawOffer">پیشنهاد مساوی</button><button class="btn secondary" id="resign">تسلیم</button><button class="btn danger" id="gameLeave">ترک بازی</button></div>
+</div></section>
+
+<div class="modal" id="promoModal"><div class="card"><h2>ترفیع سرباز</h2><p>مهره مورد نظر را انتخاب کن:</p><div class="promo">
+<button data-piece="q">♕</button><button data-piece="r">♖</button><button data-piece="b">♗</button><button data-piece="n">♘</button>
+</div></div></div>
+
+<div class="modal" id="drawModal"><div class="card"><h2>پیشنهاد مساوی</h2><p>بازیکن مقابل پیشنهاد مساوی داده است.</p><button class="btn green" id="acceptDraw">قبول</button><button class="btn secondary" id="declineDraw">رد</button></div></div>
+
+<script>
+const ico={w:{p:"♙",r:"♖",n:"♘",b:"♗",q:"♕",k:"♔"},b:{p:"♟",r:"♜",n:"♞",b:"♝",q:"♛",k:"♚"}};
+let B=[],turn="w",sel=null,myColor=null,roomCode=null,isHost=false,gameOver=false,ws=null,lastState=null,pendingPromo=null,playerName="";
+const $=id=>document.getElementById(id);
+function show(id){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));$(id).classList.add("active")}
+playerName=(localStorage.getItem("chessPlayerName")||"").slice(0,20);$("playerName").value=playerName;
+function requireName(){playerName=$("playerName").value.trim().replace(/\s+/g," ").slice(0,20);if(playerName.length<2){$("nameHint").textContent="نام حداقل ۲ حرف باشد.";return false}localStorage.setItem("chessPlayerName",playerName);return true}
+function fmt(ms){ms=Math.max(0,ms);let s=Math.ceil(ms/1000),m=Math.floor(s/60);s%=60;return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")}
+function updateClocks(){if(!lastState)return;let w=lastState.clocks.w,b=lastState.clocks.b;if(lastState.running){let e=Date.now()-lastState.serverNow;if(lastState.turn=="w")w-=e;else b-=e}$("whiteClock").textContent=fmt(w);$("blackClock").textContent=fmt(b);$("whiteClock").classList.toggle("active",lastState.turn=="w");$("blackClock").classList.toggle("active",lastState.turn=="b")}
+setInterval(updateClocks,200);
+
+function draw(){
+ const e=$("board");e.innerHTML="";
+ let checkColor=lastState?.checkColor||null;
+ for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+  let d=document.createElement("div");d.className="cell "+((r+c)%2?"dark":"light");
+  if(sel&&sel[0]==r&&sel[1]==c)d.classList.add("sel");
+  if(sel&&lastState?.legal?.some(x=>x[0]==r&&x[1]==c)){d.classList.add(B[r][c]?"capture":"move")}
+  if(checkColor && B[r][c]==checkColor+"k")d.classList.add("check");
+  let p=B[r][c];if(p)d.textContent=ico[p[0]][p[1]];
+  d.onclick=()=>clickCell(r,c);e.appendChild(d)
+ }
+ $("turnText").textContent=turn=="w"?"نوبت سفید":"نوبت سیاه";$("myColor").textContent=myColor=="w"?"شما: سفید":"شما: سیاه";
+}
+function clickCell(r,c){
+ if(gameOver||turn!==myColor)return;
+ if(sel){
+  let ok=lastState?.legal?.some(x=>x[0]==r&&x[1]==c);
+  if(ok){let p=B[sel[0]][sel[1]];if(p&&p[1]=="p"&&(r==0||r==7)){pendingPromo={fr:sel[0],fc:sel[1],tr:r,tc:c};$("promoModal").classList.add("show")}else sendMove(sel[0],sel[1],r,c);sel=null;draw();return}
+ }
+ if(B[r][c]&&B[r][c][0]==myColor){sel=[r,c];draw()}else{sel=null;draw()}
+}
+function sendMove(fr,fc,tr,tc,promotion=null){if(ws?.readyState===1)ws.send(JSON.stringify({type:"move",fr,fc,tr,tc,promotion}))}
+document.querySelectorAll("[data-piece]").forEach(b=>b.onclick=()=>{let x=pendingPromo;if(!x)return;sendMove(x.fr,x.fc,x.tr,x.tc,b.dataset.piece);pendingPromo=null;$("promoModal").classList.remove("show");sel=null});
+
+function applyState(s){lastState=s;B=s.board;turn=s.turn;draw();let g=s.gameState;
+ $("gameStatus").textContent=g=="check"?"⚠️ کیش!":g=="stalemate"?"🤝 پات":g=="threefold"?"🤝 تکرار سه‌باره":g=="fiftyMove"?"🤝 قانون ۵۰ حرکت":g=="insufficient"?"🤝 مهره کافی برای مات وجود ندارد":g.includes("Mate")?"♟️ کیش مات":"بازی در جریان";
+ $("ruleText").textContent=s.canClaim50||s.canClaimRep?"امکان درخواست مساوی وجود دارد":"";
+ updateClocks()
+}
+function renderPlayers(ps){$("players").innerHTML=ps.map((p,i)=>`<div class="player"><span>${i==0?"♔ میزبان":"♟ بازیکن دوم"}</span><b>${String(p.name).replace(/[<>&"]/g,"")}</b></div>`).join("")}
+function socketOpen(){return (location.protocol=="https:"?"wss://":"ws://")+location.host}
+function newSocket(){ws=new WebSocket(socketOpen());return ws}
+function createRoom(){if(!requireName())return;isHost=true;show("roomScreen");$("roomCode").textContent="در حال ساخت...";ws=newSocket();ws.onopen=()=>ws.send(JSON.stringify({type:"create"}));bindSocket()}
+function joinRoom(){if(!requireName())return;let c=$("joinCode").value.trim().toUpperCase();if(c.length!==6){$("joinError").textContent="کد باید ۶ کاراکتری باشد";return}roomCode=c;isHost=false;show("roomScreen");$("roomCode").textContent=c;ws=newSocket();ws.onopen=()=>ws.send(JSON.stringify({type:"hello",room:c}));bindSocket()}
+function bindSocket(){
+ ws.onmessage=e=>{let m=JSON.parse(e.data);
+  if(m.type=="room"){roomCode=m.code;$("roomCode").textContent=m.code;renderPlayers(m.players);$("startBtn").disabled=!(m.host&&m.players.length===2);$("roomHint").textContent=m.players.length<2?"منتظر بازیکن دوم...":m.host?"دو بازیکن حاضرند؛ می‌توانید شروع کنید.":"منتظر شروع میزبان..."}
+  else if(m.type=="error"){alert(m.message);show("menuScreen")}
+  else if(m.type=="start"){myColor=m.color;show("gameScreen");$("gameRoom").textContent="اتاق "+roomCode;applyState(m.state)}
+  else if(m.type=="state"){applyState(m.state)}
+  else if(m.type=="ended"){gameOver=true;applyState(m.state);setTimeout(()=>alert(m.message),30)}
+  else if(m.type=="drawOffer"){$("drawModal").classList.add("show")}
+  else if(m.type=="drawDeclined"){alert("پیشنهاد مساوی رد شد.")}
+  else if(m.type=="left"){gameOver=true;alert(m.message);show("menuScreen")}
+ };
+ ws.onclose=()=>{if(!gameOver&&document.querySelector("#gameScreen.active"))$("gameStatus").textContent="ارتباط با سرور قطع شد"}
+}
+$("createBtn").onclick=createRoom;$("joinBtn").onclick=()=>{show("joinScreen");$("joinCode").focus()};$("joinBack").onclick=()=>show("menuScreen");$("joinConfirm").onclick=joinRoom;
+$("startBtn").onclick=()=>{if(ws?.readyState===1)ws.send(JSON.stringify({type:"start"}))};
+$("leaveBtn").onclick=()=>{ws?.send(JSON.stringify({type:"leave"}));ws?.close();show("menuScreen")};
+$("gameLeave").onclick=()=>{ws?.send(JSON.stringify({type:"leave"}));ws?.close();show("menuScreen")};
+$("resign").onclick=()=>{if(confirm("مطمئنی می‌خواهی تسلیم شوی؟"))ws?.send(JSON.stringify({type:"resign"}))};
+$("drawOffer").onclick=()=>ws?.send(JSON.stringify({type:"drawOffer"}));
+$("acceptDraw").onclick=()=>{ws?.send(JSON.stringify({type:"drawAccept"}));$("drawModal").classList.remove("show")};
+$("declineDraw").onclick=()=>{ws?.send(JSON.stringify({type:"drawDecline"}));$("drawModal").classList.remove("show")};
+</script>
+</body></html>
