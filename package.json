@@ -1,0 +1,8 @@
+{
+  "name":"hussein-chess-online",
+  "version":"2.0.0",
+  "description":"Full-rule online two-player chess",
+  "main":"server.js",
+  "scripts":{"start":"node server.js"},
+  "dependencies":{"ws":"^8.18.0"}
+}
